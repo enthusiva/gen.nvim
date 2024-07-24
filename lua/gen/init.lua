@@ -42,20 +42,45 @@ local default_options = {
     display_mode = "float",
     no_auto_close = false,
     init = function() end, -- Keep empty for flexibility
-    list_models = function(options)
+ list_models = function(options)
         local cmd = "curl --silent --no-buffer " .. options.base_url .. "/api/tags"
         if options.api_key ~= "" then
             cmd = cmd .. " -H 'Authorization: Bearer " .. options.api_key .. "'"
         end
         local response = vim.fn.systemlist(cmd)
-        local list = vim.fn.json_decode(response)
+
+        -- Check if the response is empty
+        if #response == 0 then
+            print("Error: Received empty response from server")
+            return {}
+        end
+
+        -- Join the response lines into a single string
+        local response_str = table.concat(response, "\n")
+
+        -- Attempt to decode the JSON response
+        local success, list = pcall(vim.fn.json_decode, response_str)
+        if not success then
+            print("Error decoding JSON response: " .. tostring(list))
+            return {}
+        end
+
+        -- Check if the decoded response has the expected structure
+        if not list or not list.models then
+            print("Error: Unexpected response structure")
+            return {}
+        end
+
         local models = {}
-        for key, _ in pairs(list.models) do
-            table.insert(models, list.models[key].name)
+        for key, value in pairs(list.models) do
+            if type(value) == "table" and value.name then
+                table.insert(models, value.name)
+            end
         end
         table.sort(models)
         return models
-    end,
+    end
+}
 }
 for k, v in pairs(default_options) do
     M[k] = v
@@ -63,7 +88,12 @@ end
 
 M.setup = function(opts)
     for k, v in pairs(opts) do
-        M[k] = v
+        if k == "base_url" then
+            -- Ensure the base_url doesn't end with a slash
+            M[k] = v:gsub("/$", "")
+        else
+            M[k] = v
+        end
     end
 end
 
