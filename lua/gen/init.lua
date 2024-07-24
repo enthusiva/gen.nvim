@@ -42,7 +42,7 @@ local default_options = {
     display_mode = "float",
     no_auto_close = false,
     init = function() end, -- Keep empty for flexibility
- list_models = function(options)
+    list_models = function(options)
         local cmd = "curl --silent --no-buffer " .. options.base_url .. "/api/tags"
         if options.api_key ~= "" then
             cmd = cmd .. " -H 'Authorization: Bearer " .. options.api_key .. "'"
@@ -79,9 +79,9 @@ local default_options = {
         end
         table.sort(models)
         return models
-    end
+    end,
 }
-}
+
 for k, v in pairs(default_options) do
     M[k] = v
 end
