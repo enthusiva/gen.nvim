@@ -21,6 +21,16 @@ local function trim_table(tbl)
     return tbl
 end
 
+local function get_api_key(options)
+    local api_key = ""
+    local envApiKey = os.getenv(options.env_api_key)
+    if not envApiKey or envApiKey == "" then
+        if options.api_key ~= "" then
+            api_key = options.api_key
+        end
+    end
+    return api_key
+end
 local default_options = {
     model = "mistral",
     base_url = "http://localhost:11434", -- Default base URL (local Ollama instance)
@@ -34,15 +44,7 @@ local default_options = {
     retry_map = "<c-r>",
     command = function(options)
         local headers = "-H 'Content-Type: application/json'"
-        local api_key
-        if options.env_api_key ~= "" then
-            api_key = os.getenv(options.env_api_key)
-            if not api_key or api_key == "" then
-                if options.api_key ~= "" then
-                    api_key = options.api_key
-                end
-            end
-        end
+        local api_key = get_api_key(options)
         if api_key ~= "" then
             headers = headers .. " -H 'Authorization: Bearer " .. api_key .. "'"
         end
@@ -54,8 +56,9 @@ local default_options = {
     init = function() end, -- Keep empty for flexibility
     list_models = function(options)
         local cmd = "curl --silent --no-buffer " .. options.base_url .. "/api/tags"
-        if options.api_key ~= "" then
-            cmd = cmd .. " -H 'Authorization: Bearer " .. options.api_key .. "'"
+        local api_key = get_api_key(options)
+        if api_key ~= "" then
+            cmd = cmd .. " -H 'Authorization: Bearer " .. api_key .. "'"
         end
         local response = vim.fn.systemlist(cmd)
 
@@ -138,7 +141,7 @@ local function get_window_options()
     }
 end
 
-function write_to_buffer(lines)
+local function write_to_buffer(lines)
     if not M.result_buffer or not vim.api.nvim_buf_is_valid(M.result_buffer) then
         return
     end
@@ -160,8 +163,8 @@ function write_to_buffer(lines)
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
 end
 
-function create_window(cmd, opts)
-    function setup_split()
+local function create_window(cmd, opts)
+    local function setup_split()
         M.result_buffer = vim.fn.bufnr("%")
         M.float_win = vim.fn.win_getid()
         vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
@@ -192,7 +195,7 @@ function create_window(cmd, opts)
     end, { buffer = M.result_buffer })
 end
 
-function reset()
+local function reset()
     M.result_buffer = nil
     M.float_win = nil
     M.result_string = ""
