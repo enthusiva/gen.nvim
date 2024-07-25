@@ -25,6 +25,7 @@ local default_options = {
     model = "mistral",
     base_url = "http://localhost:11434", -- Default base URL (local Ollama instance)
     api_key = "", -- Default empty API key for optional authentication
+    env_api_key = "", -- Default empty API key for optional authentication
     debug = false,
     body = { stream = true },
     show_prompt = false,
@@ -33,8 +34,17 @@ local default_options = {
     retry_map = "<c-r>",
     command = function(options)
         local headers = "-H 'Content-Type: application/json'"
-        if options.api_key ~= "" then
-            headers = headers .. " -H 'Authorization: Bearer " .. options.api_key .. "'"
+        local api_key
+        if options.env_api_key ~= "" then
+            api_key = os.getenv(options.env_api_key)
+            if not api_key or api_key == "" then
+                if options.api_key ~= "" then
+                    api_key = options.api_key
+                end
+            end
+        end
+        if api_key ~= "" then
+            headers = headers .. " -H 'Authorization: Bearer " .. api_key .. "'"
         end
         return "curl --silent --no-buffer -X POST " .. options.base_url .. "/api/chat " .. headers .. " -d $body"
     end,
