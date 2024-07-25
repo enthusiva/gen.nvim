@@ -22,12 +22,12 @@ local function trim_table(tbl)
 end
 
 local function get_api_key(options)
-    local api_key = ""
-    local envApiKey = os.getenv(options.env_api_key)
-    if not envApiKey or envApiKey == "" then
+    local api_key = os.getenv(options.env_api_key)
+    if not api_key or api_key == "" then
         if options.api_key ~= "" then
             api_key = options.api_key
         end
+    else
     end
     return api_key
 end
